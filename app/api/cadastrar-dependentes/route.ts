@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { validateCPF, cleanCPF } from '@/lib/cpf'
+import { getToken, registerAssociate } from '@/lib/clubecerto'
 
 interface DependenteInput {
   nome: string
@@ -22,10 +23,10 @@ export async function POST(req: NextRequest) {
 
   const cpfTitularClean = cleanCPF(cpfTitular)
 
-  // Verify titular exists
+  // Verify titular exists and get full data for Clube Certo
   const { data: titular, error: titularError } = await supabaseAdmin
     .from('Compradores_Clube_Certo')
-    .select('cpf_titular, oferta')
+    .select('cpf_titular, nome_titular, email_titular, telefone_titular, oferta')
     .eq('cpf_titular', cpfTitularClean)
     .single()
 
@@ -71,6 +72,52 @@ export async function POST(req: NextRequest) {
   if (insertError) {
     console.error('Erro ao salvar dependentes:', insertError)
     return NextResponse.json({ error: 'Erro ao salvar. Tente novamente.' }, { status: 500 })
+  }
+
+  // Register dependents in Clube Certo (non-blocking — errors are logged only)
+  try {
+    const token = await getToken()
+    let titularRegistered = false
+
+    for (const dep of rows) {
+      const result = await registerAssociate(token, {
+        name: dep.nome,
+        cpf: dep.cpf,
+        ...(dep.email ? { email: dep.email } : {}),
+        ...(dep.telefone ? { phone: dep.telefone } : {}),
+        fatherCPF: cpfTitularClean,
+      })
+
+      if (!result.ok && result.error?.includes('fatherNotFounded') && !titularRegistered) {
+        // Register titular first, then retry dependent
+        const titularResult = await registerAssociate(token, {
+          name: titular.nome_titular,
+          cpf: cpfTitularClean,
+          ...(titular.email_titular ? { email: titular.email_titular } : {}),
+          ...(titular.telefone_titular ? { phone: titular.telefone_titular.replace(/\D/g, '') } : {}),
+        })
+        titularRegistered = true
+        if (!titularResult.ok) {
+          console.error('Clube Certo: erro ao registrar titular:', titularResult.error)
+        } else {
+          // Retry dependent
+          const retry = await registerAssociate(token, {
+            name: dep.nome,
+            cpf: dep.cpf,
+            ...(dep.email ? { email: dep.email } : {}),
+            ...(dep.telefone ? { phone: dep.telefone } : {}),
+            fatherCPF: cpfTitularClean,
+          })
+          if (!retry.ok) {
+            console.error(`Clube Certo: erro ao registrar dependente ${dep.nome} (retry):`, retry.error)
+          }
+        }
+      } else if (!result.ok) {
+        console.error(`Clube Certo: erro ao registrar dependente ${dep.nome}:`, result.error)
+      }
+    }
+  } catch (err) {
+    console.error('Clube Certo: falha geral:', err)
   }
 
   return NextResponse.json({ success: true, count: rows.length })
