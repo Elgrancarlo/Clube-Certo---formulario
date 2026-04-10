@@ -13,7 +13,8 @@ export async function getToken(): Promise<string> {
   if (!res.ok || !data.token) {
     throw new Error(`Clube Certo login failed: ${JSON.stringify(data)}`)
   }
-  return data.token
+  // API returns token with or without "Bearer " prefix — normalize to raw token
+  return (data.token as string).replace(/^Bearer\s+/i, '')
 }
 
 export async function registerAssociate(
