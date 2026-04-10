@@ -8,10 +8,15 @@ import { validateCPF } from '@/lib/cpf'
 
 const EMPTY_DEP: DependenteData = { nome: '', email: '', cpf: '', telefone: '' }
 
+function getOfertaNum(oferta: string): number {
+  const match = oferta.match(/oferta\s*(\d)/i)
+  return match ? parseInt(match[1]) : 1
+}
+
 function getSlots(oferta: string): number {
-  const o = oferta.toLowerCase().replace(/\s/g, '')
-  if (o.includes('1') || o === 'oferta1') return 4   // 5 acessos = titular + 4 deps
-  if (o.includes('2') || o === 'oferta2') return 2   // 3 acessos = titular + 2 deps
+  const num = getOfertaNum(oferta)
+  if (num === 1) return 4  // 5 acessos = titular + 4 deps
+  if (num === 2) return 2  // 3 acessos = titular + 2 deps
   return 4
 }
 
@@ -50,8 +55,7 @@ function CadastroContent() {
           return
         }
         // Redirect upsell for oferta3
-        const o = data.oferta.toLowerCase().replace(/\s/g, '')
-        if (o.includes('3') || o === 'oferta3') {
+        if (getOfertaNum(data.oferta) === 3) {
           router.replace(`/upsell?cpf=${cpfTitular}`)
           return
         }
