@@ -9,14 +9,16 @@ import { validateCPF } from '@/lib/cpf'
 const EMPTY_DEP: DependenteData = { nome: '', email: '', cpf: '', telefone: '' }
 
 function getOfertaNum(oferta: string): number {
-  const match = oferta.match(/oferta\s*(\d)/i)
-  return match ? parseInt(match[1]) : 1
+  if (oferta.includes('49.90')) return 1  // 5 acessos = titular + 4 deps
+  if (oferta.includes('39.90')) return 2  // 3 acessos = titular + 2 deps
+  if (oferta.includes('29.90')) return 3  // upsell
+  return 1
 }
 
 function getSlots(oferta: string): number {
   const num = getOfertaNum(oferta)
-  if (num === 1) return 4  // 5 acessos = titular + 4 deps
-  if (num === 2) return 2  // 3 acessos = titular + 2 deps
+  if (num === 1) return 4
+  if (num === 2) return 2
   return 4
 }
 
