@@ -92,6 +92,14 @@ function CadastroContent() {
         setSubmitError(`CPF inválido: ${dep.nome || 'dependente'}`)
         return
       }
+      if (!dep.email.trim()) {
+        setSubmitError(`Preencha o e-mail de ${dep.nome || 'dependente'}.`)
+        return
+      }
+      if (!dep.telefone.trim()) {
+        setSubmitError(`Preencha o telefone de ${dep.nome || 'dependente'}.`)
+        return
+      }
     }
 
     setSubmitting(true)

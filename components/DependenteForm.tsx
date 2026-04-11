@@ -62,7 +62,7 @@ export default function DependenteForm({ index, data, onChange }: Props) {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            E-mail
+            E-mail <span className="text-[#E85A7A]">*</span>
           </label>
           <input
             type="email"
@@ -75,7 +75,7 @@ export default function DependenteForm({ index, data, onChange }: Props) {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Telefone
+            Telefone <span className="text-[#E85A7A]">*</span>
           </label>
           <input
             type="text"
